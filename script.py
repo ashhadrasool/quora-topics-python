@@ -7,6 +7,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import argparse
 from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods.posts import NewPost
@@ -86,26 +88,42 @@ def scrape_quora_topics(driver, keyword):
         else:
             driver.get("https://www.quora.com/search?q="+urllib.parse.quote(keyword)+"&type=topic")
 
-        time.sleep(5)
+        tries = 1
+        total_tries=3
 
-        topics_list = driver.find_elements(By.CSS_SELECTOR, "span[class='q-text qu-wordBreak--break-word']")
-        if len(topics_list)>0:
-            no_results = False
+        delay=5
+        while tries<=total_tries and no_results:
+            print("Scrap try: "+str(tries))
+            tries+=1
 
-        tries = 2
+            by = By.CSS_SELECTOR
+            selector = "div[class='q-box qu-borderBottom qu-p--medium']"
 
-        while tries>=0 and no_results:
-            tries-=1
-            driver.refresh()
-            time.sleep(5)
-            # driver.find_element("We couldn't find any results for 'business'.")
-            topics_list = driver.find_elements(By.CSS_SELECTOR, "div[class='q-box qu-borderBottom qu-p--medium']")
-            if len(topics_list)>0:
+            #wait of maximum delay time
+            WebDriverWait(driver, delay).until(EC.presence_of_all_elements_located((by, selector)))
+            time.sleep(3)
+            topics_list = driver.find_elements(by, selector)
+            if len(topics_list)==0:
+                driver.refresh()
+            if len(topics_list)==1 and topics_list[0].text.startswith("We couldn't find any results for"):
+                print("Couldn't find")
+                driver.refresh()
+            if len(topics_list)==1 and topics_list[0].text.startswith("We couldn't find any more results for"):
+                time.sleep(2)
+                selector_new = "div[class='q-flex qu-alignItems--center qu-py--small qu-flex--auto qu-overflow--hidden']"
+                topics_list = driver.find_elements(by, selector_new)
+                if len(topics_list)>1:
+                    no_results = False
+                else:
+                    driver.refresh()
+            elif len(topics_list)>0:
                 no_results = False
 
         if no_results:
             print('Cannot find topics')
-            return
+            exit(1)
+        else:
+            print("Found Total "+str(len(topics_list))+" Topics on Quora")
 
         topics = [element.text for element in topics_list]
 
@@ -141,7 +159,7 @@ def create_wordpress_draft(title, content):
 def main():
     # total arguments
     n = len(sys.argv)
-    print("Total arguments passed:", n)
+    # print("Total arguments passed:", n)
 
     try:
         keyword = None
@@ -153,7 +171,7 @@ def main():
             parser = argparse.ArgumentParser()
             parser.add_argument('--keyword', type=str)
             parser.add_argument('--prompt', type=str)
-            parser.add_argument('--n', type=str)
+            parser.add_argument('--n', type=int)
             parser.add_argument('--size', type=str)
 
             args = parser.parse_args()
@@ -192,21 +210,26 @@ def main():
         driver = setup_driver()
         topics = scrape_quora_topics(driver, keyword)
 
-        for i in range(min(num_articles, len(topics))):
+        articles_to_generate = min(num_articles, len(topics))
+        print('Articles to generate: '+str(articles_to_generate))
+        for i in range(articles_to_generate):
             topic = topics[i]
             # own_prompt = "Write an article in english of "+str(word_count)+" words about:"
 
-            print('Generating Article no: '+ str(i+1))
+            print('\nGenerating Article no: '+ str(i+1))
             prompt = f"{own_prompt} {topic} in english of {str(word_count)} words"
             generated_article = generate_article(word_count, prompt)
 
             title = f"{topic} - Article"
             draft_content = generated_article
 
-            print('Creating Wordpresss Draft: '+ str(i+1))
-            post_id = create_wordpress_draft(title, draft_content)
+            try:
+                print('Creating Wordpresss Draft: '+ str(i+1))
+                post_id = create_wordpress_draft(title, draft_content)
+                print(f"Draft created with ID: {post_id}")
+            except:
+                print('Error Creating Wordpresss Draft: '+ str(i+1))
 
-            print(f"Draft created with ID: {post_id}")
 
     except Exception as e:
         print(f"An error occurred: {e}")
