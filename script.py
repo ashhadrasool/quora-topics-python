@@ -109,8 +109,9 @@ def scrape_quora_topics(driver, keyword):
                 print("Couldn't find")
                 driver.refresh()
             if len(topics_list)==1 and topics_list[0].text.startswith("We couldn't find any more results for"):
-                time.sleep(2)
                 selector_new = "div[class='q-flex qu-alignItems--center qu-py--small qu-flex--auto qu-overflow--hidden']"
+                WebDriverWait(driver, delay).until(EC.presence_of_all_elements_located((by, selector_new)))
+                time.sleep(2)
                 topics_list = driver.find_elements(by, selector_new)
                 if len(topics_list)>1:
                     no_results = False
