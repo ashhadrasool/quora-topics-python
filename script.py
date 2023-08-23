@@ -168,6 +168,8 @@ def main():
         num_articles = None
         word_count = None
 
+        arg_mode = True
+
         if n>0:
             parser = argparse.ArgumentParser()
             parser.add_argument('--keyword', type=str)
@@ -177,16 +179,20 @@ def main():
 
             args = parser.parse_args()
 
-            keyword = args.keyword
-            own_prompt = args.prompt
-            num_articles = args.n
-            if args.size.lower() == 'small':
-                word_count = 250
-            elif args.size.lower() == 'medium':
-                word_count = 500
-            elif args.size.lower() == 'large':
-                word_count = 700
-        else:
+            if args.keyword != None and args.prompt != None and args.n != None:
+                keyword = args.keyword
+                own_prompt = args.prompt
+                num_articles = args.n
+                if args.size.lower() == 'small':
+                    word_count = 250
+                elif args.size.lower() == 'medium':
+                    word_count = 500
+                elif args.size.lower() == 'large':
+                    word_count = 700
+            else:
+                arg_mode = False
+
+        if arg_mode == False:
             # User input
             keyword = input("Enter a keyword (e.g., 'business'): ")
             own_prompt = input("Enter the prompt text: ")
