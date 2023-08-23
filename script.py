@@ -29,7 +29,7 @@ def setup_driver():
         else:
             driver_path = os.path.join(os.getcwd(), 'lib', 'chromedriver-mac-x64', 'chromedriver')
             binary_path = os.path.join(os.getcwd(), 'lib', 'chrome-mac-x64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing')
-    elif platform == "win32":
+    elif platform.system() == "Windows":
         if platform.machine().endswith('64'):
             driver_path = os.path.join(os.getcwd(), 'lib', 'chromedriver-win64', 'chromedriver.exe')
             binary_path = os.path.join(os.getcwd(), 'lib', 'chrome-win64', 'chrome.exe')
