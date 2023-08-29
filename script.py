@@ -14,7 +14,7 @@ from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods.posts import NewPost
 import openai
 
-openai.api_key = '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'
+openai.api_key = 'xyz'
 driver = None
 
 def setup_driver():
